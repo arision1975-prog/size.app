@@ -8,17 +8,17 @@
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body {
       margin: 0;
-      padding: 12px;
+      padding: 10px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: #121417;
       color: #f3f5f8;
     }
     .app {
-      max-width: 720px;
+      max-width: 760px;
       margin: 0 auto;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
     .panel {
       background: #1c2026;
@@ -32,12 +32,15 @@
       gap: 8px;
       align-items: center;
     }
+    .row + .row {
+      margin-top: 10px;
+    }
     label.btn, button {
       appearance: none;
       border: none;
-      border-radius: 10px;
-      padding: 10px 14px;
-      font-size: 14px;
+      border-radius: 9px;
+      padding: 9px 12px;
+      font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       color: #fff;
@@ -45,39 +48,51 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 5px;
     }
-    label.btn.secondary, button.secondary {
-      background: #323842;
-    }
-    label.btn.active, button.active {
-      background: #2f855a;
-    }
-    input[type="file"] {
-      display: none;
-    }
-    .input-group {
+    button.secondary, label.btn.secondary { background: #323842; }
+    button.success { background: #2f855a; }
+    button.warn { background: #b7791f; }
+    button.danger { background: #9b2c2c; }
+    button.active { outline: 2px solid #63b3ed; background: #2c5282; }
+    button.small { padding: 6px 10px; font-size: 12px; }
+    input[type="file"] { display: none; }
+
+    .field {
       display: flex;
       align-items: center;
       gap: 6px;
-      font-size: 14px;
+      font-size: 13px;
     }
-    .input-group input, .input-group select {
+    .field input, .field select {
       background: #121417;
       color: #fff;
       border: 1px solid #444c56;
       border-radius: 8px;
-      padding: 8px 10px;
+      padding: 7px 9px;
       font-size: 14px;
-      width: 92px;
     }
-    .input-group select {
-      width: auto;
+    .field input[type="number"] { width: 82px; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 10px;
     }
+    .stat {
+      background: #121417;
+      border: 1px solid #2b313b;
+      border-radius: 9px;
+      padding: 8px 10px;
+    }
+    .stat-label { font-size: 11px; color: #9aa4b2; }
+    .stat-val { font-size: 16px; font-weight: 700; color: #63b3ed; margin-top: 2px; }
+
     .canvas-wrap {
       position: relative;
       width: 100%;
-      min-height: 240px;
+      min-height: 260px;
       background: #0d0f12;
       border: 1px dashed #3a424e;
       border-radius: 12px;
@@ -88,44 +103,71 @@
     }
     canvas {
       display: block;
-      max-width: 100%;
+      width: 100%;
       height: auto;
       touch-action: none;
     }
     .placeholder {
       color: #9aa4b2;
-      font-size: 14px;
+      font-size: 13px;
       text-align: center;
       padding: 24px;
       line-height: 1.6;
     }
-    .result-box {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
+
+    .line-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 210px;
+      overflow-y: auto;
       margin-top: 8px;
     }
-    .stat {
+    .line-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
       background: #121417;
       border: 1px solid #2b313b;
-      border-radius: 10px;
-      padding: 10px;
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 13px;
     }
-    .stat-label {
+    .line-item.selected {
+      border-color: #4ade80;
+      background: #16221c;
+    }
+    .line-main {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      cursor: pointer;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #4ade80;
+      flex-shrink: 0;
+    }
+    textarea.output-box {
+      width: 100%;
+      min-height: 110px;
+      background: #121417;
+      color: #e2e8f0;
+      border: 1px solid #3a424e;
+      border-radius: 8px;
+      padding: 8px;
       font-size: 12px;
-      color: #9aa4b2;
-    }
-    .stat-value {
-      font-size: 18px;
-      font-weight: 700;
-      margin-top: 2px;
-      color: #63b3ed;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      margin-top: 8px;
     }
     .status {
       font-size: 12px;
       color: #a0aec0;
       margin-top: 8px;
-      min-height: 18px;
     }
   </style>
 </head>
@@ -133,49 +175,77 @@
   <div class="app">
     <div class="panel">
       <div class="row">
-        <label class="btn" for="photoInput">
-          写真を選ぶ / 撮影
-        </label>
+        <label class="btn" for="photoInput">写真を選ぶ / 撮影</label>
         <input id="photoInput" type="file" accept="image/*" />
 
-        <button id="modeRefBtn" class="secondary active" type="button">基準線（A-B）</button>
-        <button id="modeMeasureBtn" class="secondary" type="button">測定線（C-D）</button>
-        <button id="resetPtsBtn" class="secondary" type="button">点をリセット</button>
+        <button id="toolRefBtn" class="secondary active" type="button">基準線 (A-B)</button>
+        <button id="toolMeasureBtn" class="secondary" type="button">測定線操作</button>
+        <button id="toolPanBtn" class="secondary" type="button">画面移動 (パン)</button>
       </div>
 
-      <div class="row" style="margin-top: 10px;">
-        <div class="input-group">
-          <span>基準の長さ:</span>
-          <input id="refLengthInput" type="number" step="any" min="0.01" value="10" />
+      <div class="row">
+        <div class="field">
+          <span>基準長さ:</span>
+          <input id="refRealInput" type="number" step="any" min="0.001" value="4" />
           <select id="unitSelect">
             <option value="cm" selected>cm</option>
             <option value="mm">mm</option>
           </select>
         </div>
+
+        <button id="addLineBtn" class="success" type="button">＋ 測定線を1本追加</button>
+        <button id="resetAllBtn" class="secondary" type="button">全リセット</button>
       </div>
 
-      <div class="result-box">
+      <div class="row">
+        <span class="field">拡大/縮小:</span>
+        <button class="secondary small zoom-btn active" data-zoom="1" type="button">1x</button>
+        <button class="secondary small zoom-btn" data-zoom="2" type="button">2x</button>
+        <button class="secondary small zoom-btn" data-zoom="3" type="button">3x</button>
+        <button id="zoomResetBtn" class="secondary small" type="button">表示リセット</button>
+      </div>
+
+      <div class="stats-grid">
         <div class="stat">
-          <div class="stat-label">基準線（A-B）ピクセル長</div>
-          <div class="stat-value" id="refPxText">-</div>
+          <div class="stat-label">基準線 (A-B)</div>
+          <div class="stat-val" id="refPxStat">-</div>
         </div>
         <div class="stat">
-          <div class="stat-label">測定サイズ（C-D）</div>
-          <div class="stat-value" id="measuredText">-</div>
+          <div class="stat-label">測定本数</div>
+          <div class="stat-val" id="countStat">0 本</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">平均サイズ</div>
+          <div class="stat-val" id="avgStat">-</div>
         </div>
       </div>
 
-      <div class="status" id="statusText">「写真を選ぶ / 撮影」から画像を選択してください。</div>
+      <div class="status" id="statusText">写真を選択してください。基準線A-Bを合わせたら「＋ 測定線を1本追加」で1尾ずつ測れます。</div>
     </div>
 
     <div class="panel">
-      <div class="canvas-wrap" id="canvasWrap">
+      <div class="canvas-wrap">
         <div class="placeholder" id="placeholder">
-          まだ写真が読み込まれていません。<br />
-          上の「写真を選ぶ / 撮影」をタップしてください。
+          写真がまだ読み込まれていません。<br />
+          「写真を選ぶ / 撮影」から画像を選択してください。
         </div>
         <canvas id="canvas" style="display: none;"></canvas>
       </div>
+    </div>
+
+    <div class="panel">
+      <strong>測定線一覧（タップで選択・端点をドラッグ調整）</strong>
+      <div class="line-list" id="lineList"></div>
+    </div>
+
+    <div class="panel">
+      <div class="row">
+        <strong>結果出力</strong>
+        <button id="copyTextBtn" class="secondary small" type="button">テキストをコピー</button>
+        <button id="downloadCsvBtn" class="secondary small" type="button">CSV保存</button>
+        <button id="downloadImgBtn" class="secondary small" type="button">測定画像保存</button>
+      </div>
+      <textarea id="outputArea" class="output-box" readonly placeholder="測定を行うとここに結果が出力されます。"></textarea>
     </div>
   </div>
 
@@ -185,223 +255,483 @@
     const ctx = canvas.getContext('2d');
     const placeholder = document.getElementById('placeholder');
     const statusText = document.getElementById('statusText');
-    const refLengthInput = document.getElementById('refLengthInput');
+
+    const refRealInput = document.getElementById('refRealInput');
     const unitSelect = document.getElementById('unitSelect');
-    const refPxText = document.getElementById('refPxText');
-    const measuredText = document.getElementById('measuredText');
-    const modeRefBtn = document.getElementById('modeRefBtn');
-    const modeMeasureBtn = document.getElementById('modeMeasureBtn');
-    const resetPtsBtn = document.getElementById('resetPtsBtn');
+    const toolRefBtn = document.getElementById('toolRefBtn');
+    const toolMeasureBtn = document.getElementById('toolMeasureBtn');
+    const toolPanBtn = document.getElementById('toolPanBtn');
+    const addLineBtn = document.getElementById('addLineBtn');
+    const resetAllBtn = document.getElementById('resetAllBtn');
+    const zoomResetBtn = document.getElementById('zoomResetBtn');
+    const zoomBtns = document.querySelectorAll('.zoom-btn');
+
+    const refPxStat = document.getElementById('refPxStat');
+    const countStat = document.getElementById('countStat');
+    const avgStat = document.getElementById('avgStat');
+    const lineListEl = document.getElementById('lineList');
+    const outputArea = document.getElementById('outputArea');
+
+    const copyTextBtn = document.getElementById('copyTextBtn');
+    const downloadCsvBtn = document.getElementById('downloadCsvBtn');
+    const downloadImgBtn = document.getElementById('downloadImgBtn');
 
     let img = new Image();
     let hasImage = false;
-    let activeMode = 'ref'; // 'ref' or 'measure'
-    let dragging = null; // { group: 'ref'|'measure', index: 0|1 }
+    let baseWidth = 700;
+    let baseHeight = 500;
 
-    // 画像座標（0〜1の割合で保持するとリサイズ時もズレない）
-    let refPts = [
-      { x: 0.25, y: 0.5 },
-      { x: 0.75, y: 0.5 }
-    ];
-    let measurePts = [
-      { x: 0.3, y: 0.7 },
-      { x: 0.7, y: 0.7 }
-    ];
+    // ツール: 'ref' | 'measure' | 'pan'
+    let activeTool = 'ref';
 
-    function setMode(mode) {
-      activeMode = mode;
-      modeRefBtn.classList.toggle('active', mode === 'ref');
-      modeMeasureBtn.classList.toggle('active', mode === 'measure');
-      statusText.textContent = mode === 'ref'
-        ? '基準線（A・B）の端点をドラッグして、既知の長さ（例：10cm）に合わせてください。'
-        : '測定線（C・D）の端点をドラッグして、測りたい対象の両端に合わせます。';
-      draw();
+    // ズーム・パン（画像正規化座標 0..1 基準の中心点と倍率）
+    let zoom = 1;
+    let viewCenter = { x: 0.5, y: 0.5 };
+
+    // 基準線 (正規化座標 0..1)
+    let refLine = {
+      p0: { x: 0.25, y: 0.35 },
+      p1: { x: 0.45, y: 0.35 }
+    };
+
+    // 測定線配列: [{ id, label, p0:{x,y}, p1:{x,y} }]
+    let measureLines = [];
+    let selectedLineId = null;
+    let nextLineNum = 1;
+
+    // ドラッグ状態
+    let dragState = null; // { type: 'ref'|'measure'|'pan', index?: 0|1, lineId?: number, lastNorm?: {x,y} }
+
+    function setTool(tool) {
+      activeTool = tool;
+      toolRefBtn.classList.toggle('active', tool === 'ref');
+      toolMeasureBtn.classList.toggle('active', tool === 'measure');
+      toolPanBtn.classList.toggle('active', tool === 'pan');
+
+      if (tool === 'ref') {
+        statusText.textContent = '基準線(A-B)モード：AとBをドラッグして既知の長さに合わせてください。';
+      } else if (tool === 'measure') {
+        statusText.textContent = '測定線モード：選択中の線の端点をドラッグして長さを測ります。';
+      } else {
+        statusText.textContent = '画面移動モード：ドラッグで拡大表示中の位置を移動できます。';
+      }
+      render();
     }
 
-    modeRefBtn.addEventListener('click', () => setMode('ref'));
-    modeMeasureBtn.addEventListener('click', () => setMode('measure'));
+    toolRefBtn.addEventListener('click', () => setTool('ref'));
+    toolMeasureBtn.addEventListener('click', () => setTool('measure'));
+    toolPanBtn.addEventListener('click', () => setTool('pan'));
 
-    resetPtsBtn.addEventListener('click', () => {
-      refPts = [{ x: 0.25, y: 0.5 }, { x: 0.75, y: 0.5 }];
-      measurePts = [{ x: 0.3, y: 0.7 }, { x: 0.7, y: 0.7 }];
-      draw();
-      updateMeasurements();
+    function setZoom(newZoom, centerNorm = null) {
+      zoom = Math.max(1, Math.min(6, newZoom));
+      if (centerNorm) {
+        viewCenter = clampCenter(centerNorm, zoom);
+      } else if (zoom === 1) {
+        viewCenter = { x: 0.5, y: 0.5 };
+      } else {
+        viewCenter = clampCenter(viewCenter, zoom);
+      }
+      zoomBtns.forEach(btn => {
+        const z = parseFloat(btn.dataset.zoom);
+        btn.classList.toggle('active', Math.abs(z - zoom) < 0.01);
+      });
+      render();
+    }
+
+    function clampCenter(c, z) {
+      const half = 0.5 / z;
+      return {
+        x: Math.max(half, Math.min(1 - half, c.x)),
+        y: Math.max(half, Math.min(1 - half, c.y))
+      };
+    }
+
+    zoomBtns.forEach(btn => {
+      btn.addEventListener('click', () => setZoom(parseFloat(btn.dataset.zoom)));
     });
 
-    refLengthInput.addEventListener('input', updateMeasurements);
-    unitSelect.addEventListener('change', updateMeasurements);
+    zoomResetBtn.addEventListener('click', () => setZoom(1, { x: 0.5, y: 0.5 }));
 
-    function loadImageFromFile(file) {
+    function addMeasureLine() {
+      if (!hasImage) {
+        statusText.textContent = '先に写真を選んでください。';
+        return;
+      }
+      const id = nextLineNum++;
+      const offset = ((id - 1) % 6) * 0.03;
+      const line = {
+        id,
+        label: `#${id}`,
+        p0: { x: Math.min(0.8, 0.3 + offset), y: Math.min(0.85, 0.5 + offset) },
+        p1: { x: Math.min(0.9, 0.65 + offset), y: Math.min(0.85, 0.5 + offset) }
+      };
+      measureLines.push(line);
+      selectedLineId = id;
+      setTool('measure');
+      updateAll();
+    }
+
+    addLineBtn.addEventListener('click', addMeasureLine);
+
+    resetAllBtn.addEventListener('click', () => {
+      refLine = { p0: { x: 0.25, y: 0.35 }, p1: { x: 0.45, y: 0.35 } };
+      measureLines = [];
+      selectedLineId = null;
+      nextLineNum = 1;
+      setZoom(1, { x: 0.5, y: 0.5 });
+      updateAll();
+    });
+
+    refRealInput.addEventListener('input', updateAll);
+    unitSelect.addEventListener('change', updateAll);
+
+    photoInput.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
       if (!file) return;
       statusText.textContent = '写真を読み込み中...';
 
       const reader = new FileReader();
-      reader.onload = function (e) {
+      reader.onload = (ev) => {
         const nextImg = new Image();
-        nextImg.onload = function () {
+        nextImg.onload = () => {
           img = nextImg;
           hasImage = true;
+          const wrapW = Math.max(280, canvas.parentElement.clientWidth);
+          const ratio = img.naturalHeight / img.naturalWidth;
+          baseWidth = Math.round(wrapW);
+          baseHeight = Math.max(180, Math.round(wrapW * ratio));
+          canvas.width = baseWidth;
+          canvas.height = baseHeight;
           placeholder.style.display = 'none';
           canvas.style.display = 'block';
-          fitCanvasToContainer();
-          draw();
-          updateMeasurements();
-          statusText.textContent = `読み込み完了（${img.naturalWidth} × ${img.naturalHeight} px）。A・Bを基準長さに合わせてください。`;
+          setZoom(1, { x: 0.5, y: 0.5 });
+          updateAll();
+          statusText.textContent = `読み込み完了（${img.naturalWidth}×${img.naturalHeight}px）。基準線A-Bを合わせ、「＋ 測定線を1本追加」を押してください。`;
         };
-        nextImg.onerror = function () {
-          statusText.textContent = '画像の描画に失敗しました。別の写真でお試しください。';
-        };
-        nextImg.src = e.target.result;
-      };
-      reader.onerror = function () {
-        statusText.textContent = 'ファイルの読み込みに失敗しました。';
+        nextImg.src = ev.target.result;
       };
       reader.readAsDataURL(file);
-    }
-
-    photoInput.addEventListener('change', function (e) {
-      const file = e.target.files && e.target.files[0];
-      loadImageFromFile(file);
-      // 同じ写真を連続で選び直せるようにリセット
       e.target.value = '';
     });
 
-    function fitCanvasToContainer() {
-      if (!hasImage) return;
-      const wrapWidth = Math.max(240, canvas.parentElement.clientWidth - 4);
-      const scale = wrapWidth / img.naturalWidth;
-      canvas.width = Math.round(wrapWidth);
-      canvas.height = Math.max(150, Math.round(img.naturalHeight * scale));
-    }
-
-    window.addEventListener('resize', () => {
-      if (!hasImage) return;
-      fitCanvasToContainer();
-      draw();
-      updateMeasurements();
-    });
-
-    function getCanvasPos(clientX, clientY) {
-      const rect = canvas.getBoundingClientRect();
+    // 表示領域の正規化座標範囲 [minX..maxX, minY..maxY]
+    function getViewportBounds() {
+      const span = 1 / zoom;
+      const c = clampCenter(viewCenter, zoom);
       return {
-        x: (clientX - rect.left) * (canvas.width / rect.width),
-        y: (clientY - rect.top) * (canvas.height / rect.height)
+        minX: c.x - span / 2,
+        maxX: c.x + span / 2,
+        minY: c.y - span / 2,
+        maxY: c.y + span / 2,
+        span
       };
     }
 
-    function distPx(p1, p2) {
-      const x1 = p1.x * canvas.width;
-      const y1 = p1.y * canvas.height;
-      const x2 = p2.x * canvas.width;
-      const y2 = p2.y * canvas.height;
-      return Math.hypot(x2 - x1, y2 - y1);
+    // キャンバス上のピクセル座標 -> 画像の正規化座標 (0..1)
+    function canvasPxToNorm(cx, cy) {
+      const b = getViewportBounds();
+      const rx = cx / canvas.width;
+      const ry = cy / canvas.height;
+      return {
+        x: b.minX + rx * b.span,
+        y: b.minY + ry * b.span
+      };
     }
 
-    function updateMeasurements() {
-      if (!hasImage) return;
-      const refPx = distPx(refPts[0], refPts[1]);
-      const measPx = distPx(measurePts[0], measurePts[1]);
-      const refReal = parseFloat(refLengthInput.value);
-      const unit = unitSelect.value;
-
-      refPxText.textContent = `${refPx.toFixed(1)} px`;
-
-      if (refPx > 0 && !isNaN(refReal) && refReal > 0) {
-        const value = (measPx / refPx) * refReal;
-        measuredText.textContent = `${value.toFixed(2)} ${unit}`;
-      } else {
-        measuredText.textContent = '-';
-      }
+    // 画像の正規化座標 (0..1) -> キャンバス上のピクセル座標
+    function normToCanvasPx(nx, ny) {
+      const b = getViewportBounds();
+      return {
+        x: ((nx - b.minX) / b.span) * canvas.width,
+        y: ((ny - b.minY) / b.span) * canvas.height
+      };
     }
 
-    function drawLineWithHandles(pts, color, labels) {
-      const p0 = { x: pts[0].x * canvas.width, y: pts[0].y * canvas.height };
-      const p1 = { x: pts[1].x * canvas.width, y: pts[1].y * canvas.height };
+    // 元画像ピクセル距離
+    function calcRealPx(p0, p1) {
+      if (!hasImage) return 0;
+      const dx = (p1.x - p0.x) * img.naturalWidth;
+      const dy = (p1.y - p0.y) * img.naturalHeight;
+      return Math.hypot(dx, dy);
+    }
+
+    function calcMeasuredValue(line) {
+      const refPx = calcRealPx(refLine.p0, refLine.p1);
+      const linePx = calcRealPx(line.p0, line.p1);
+      const refReal = parseFloat(refRealInput.value);
+      if (refPx <= 0 || isNaN(refReal) || refReal <= 0) return null;
+      return (linePx / refPx) * refReal;
+    }
+
+    function drawLine(p0Norm, p1Norm, color, labels, isSelected = false) {
+      const a = normToCanvasPx(p0Norm.x, p0Norm.y);
+      const b = normToCanvasPx(p1Norm.x, p1Norm.y);
 
       ctx.save();
       ctx.strokeStyle = color;
-      ctx.lineWidth = 3;
+      ctx.lineWidth = isSelected ? 3.5 : 2.5;
       ctx.beginPath();
-      ctx.moveTo(p0.x, p0.y);
-      ctx.lineTo(p1.x, p1.y);
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
       ctx.stroke();
 
-      [p0, p1].forEach((pt, idx) => {
+      [a, b].forEach((pt, idx) => {
         ctx.beginPath();
-        ctx.arc(pt.x, pt.y, 12, 0, Math.PI * 2);
+        ctx.arc(pt.x, pt.y, isSelected ? 11 : 9, 0, Math.PI * 2);
         ctx.fillStyle = color;
         ctx.fill();
-        ctx.lineWidth = 2.5;
+        ctx.lineWidth = 2;
         ctx.strokeStyle = '#ffffff';
         ctx.stroke();
 
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 12px sans-serif';
-        ctx.fillText(labels[idx], pt.x + 14, pt.y - 8);
+        ctx.fillText(labels[idx], pt.x + 12, pt.y - 6);
       });
       ctx.restore();
     }
 
-    function draw() {
+    function render() {
       if (!hasImage) return;
+      const b = getViewportBounds();
+      const sx = b.minX * img.naturalWidth;
+      const sy = b.minY * img.naturalHeight;
+      const sw = b.span * img.naturalWidth;
+      const sh = b.span * img.naturalHeight;
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      drawLineWithHandles(refPts, '#38bdf8', ['A', 'B']);
-      drawLineWithHandles(measurePts, '#4ade80', ['C', 'D']);
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+
+      // 基準線 A-B
+      drawLine(refLine.p0, refLine.p1, '#38bdf8', ['A', 'B'], activeTool === 'ref');
+
+      // 測定線一覧
+      measureLines.forEach((line) => {
+        const sel = line.id === selectedLineId;
+        const color = sel ? '#4ade80' : '#f6e05e';
+        drawLine(line.p0, line.p1, color, [`${line.label}a`, `${line.label}b`], sel);
+      });
     }
 
-    function findHitPoint(pos) {
-      const hitRadius = 24;
-      const groups = [
-        { name: 'ref', pts: refPts },
-        { name: 'measure', pts: measurePts }
-      ];
-      // 現在選択中のモードを優先
-      groups.sort((a, b) => (a.name === activeMode ? -1 : b.name === activeMode ? 1 : 0));
+    function findHitHandle(cx, cy) {
+      const hitRadius = 22;
 
-      for (const g of groups) {
-        for (let i = 0; i < g.pts.length; i++) {
-          const px = g.pts[i].x * canvas.width;
-          const py = g.pts[i].y * canvas.height;
-          if (Math.hypot(pos.x - px, pos.y - py) <= hitRadius) {
-            return { group: g.name, index: i };
+      // 基準線ハンドル確認
+      const refPts = [refLine.p0, refLine.p1];
+      for (let i = 0; i < 2; i++) {
+        const pt = normToCanvasPx(refPts[i].x, refPts[i].y);
+        if (Math.hypot(cx - pt.x, cy - pt.y) <= hitRadius) {
+          return { type: 'ref', index: i };
+        }
+      }
+
+      // 選択中の測定線を優先、次に他の測定線
+      const ordered = [...measureLines].sort((a, b) =>
+        a.id === selectedLineId ? -1 : b.id === selectedLineId ? 1 : 0
+      );
+      for (const line of ordered) {
+        const pts = [line.p0, line.p1];
+        for (let i = 0; i < 2; i++) {
+          const pt = normToCanvasPx(pts[i].x, pts[i].y);
+          if (Math.hypot(cx - pt.x, cy - pt.y) <= hitRadius) {
+            return { type: 'measure', lineId: line.id, index: i };
           }
         }
       }
       return null;
     }
 
+    function getPointerCanvasPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: (e.clientX - rect.left) * (canvas.width / rect.width),
+        y: (e.clientY - rect.top) * (canvas.height / rect.height)
+      };
+    }
+
     canvas.addEventListener('pointerdown', (e) => {
       if (!hasImage) return;
-      const pos = getCanvasPos(e.clientX, e.clientY);
-      const hit = findHitPoint(pos);
+      const pos = getPointerCanvasPos(e);
+
+      if (activeTool === 'pan') {
+        dragState = { type: 'pan', lastNorm: canvasPxToNorm(pos.x, pos.y) };
+        canvas.setPointerCapture(e.pointerId);
+        return;
+      }
+
+      const hit = findHitHandle(pos.x, pos.y);
       if (hit) {
-        dragging = hit;
+        if (hit.type === 'ref') {
+          setTool('ref');
+          dragState = { type: 'ref', index: hit.index };
+        } else {
+          selectedLineId = hit.lineId;
+          setTool('measure');
+          dragState = { type: 'measure', lineId: hit.lineId, index: hit.index };
+        }
+        canvas.setPointerCapture(e.pointerId);
+        updateAll();
+      } else if (zoom > 1) {
+        dragState = { type: 'pan', lastNorm: canvasPxToNorm(pos.x, pos.y) };
         canvas.setPointerCapture(e.pointerId);
       }
     });
 
     canvas.addEventListener('pointermove', (e) => {
-      if (!dragging || !hasImage) return;
-      const pos = getCanvasPos(e.clientX, e.clientY);
-      const nx = Math.max(0, Math.min(1, pos.x / canvas.width));
-      const ny = Math.max(0, Math.min(1, pos.y / canvas.height));
+      if (!dragState || !hasImage) return;
+      const pos = getPointerCanvasPos(e);
+      const norm = canvasPxToNorm(pos.x, pos.y);
 
-      if (dragging.group === 'ref') {
-        refPts[dragging.index] = { x: nx, y: ny };
-      } else {
-        measurePts[dragging.index] = { x: nx, y: ny };
+      if (dragState.type === 'pan') {
+        const dx = dragState.lastNorm.x - norm.x;
+        const dy = dragState.lastNorm.y - norm.y;
+        viewCenter = clampCenter({ x: viewCenter.x + dx, y: viewCenter.y + dy }, zoom);
+        // パン後は現在のビュー中心から再計算
+        dragState.lastNorm = canvasPxToNorm(pos.x, pos.y);
+        render();
+        return;
       }
-      draw();
-      updateMeasurements();
+
+      const nx = Math.max(0, Math.min(1, norm.x));
+      const ny = Math.max(0, Math.min(1, norm.y));
+
+      if (dragState.type === 'ref') {
+        if (dragState.index === 0) refLine.p0 = { x: nx, y: ny };
+        else refLine.p1 = { x: nx, y: ny };
+      } else if (dragState.type === 'measure') {
+        const line = measureLines.find(l => l.id === dragState.lineId);
+        if (line) {
+          if (dragState.index === 0) line.p0 = { x: nx, y: ny };
+          else line.p1 = { x: nx, y: ny };
+        }
+      }
+      updateAll();
     });
 
-    function endDrag() {
-      dragging = null;
+    function stopDrag() {
+      dragState = null;
+    }
+    canvas.addEventListener('pointerup', stopDrag);
+    canvas.addEventListener('pointercancel', stopDrag);
+
+    function renderLineListAndOutput() {
+      const unit = unitSelect.value;
+      const refPx = calcRealPx(refLine.p0, refLine.p1);
+      const refReal = parseFloat(refRealInput.value);
+      refPxStat.textContent = hasImage ? `${refPx.toFixed(1)}px` : '-';
+
+      lineListEl.innerHTML = '';
+      const validValues = [];
+      const linesText = [];
+
+      measureLines.forEach((line, idx) => {
+        const val = calcMeasuredValue(line);
+        const px = calcRealPx(line.p0, line.p1);
+        if (val !== null) {
+          validValues.push(val);
+          linesText.push(`${line.label}: ${val.toFixed(2)} ${unit} (${px.toFixed(1)}px)`);
+        } else {
+          linesText.push(`${line.label}: ${px.toFixed(1)}px`);
+        }
+
+        const item = document.createElement('div');
+        item.className = 'line-item' + (line.id === selectedLineId ? ' selected' : '');
+
+        const main = document.createElement('div');
+        main.className = 'line-main';
+        main.innerHTML = `
+          <span class="dot"></span>
+          <strong>${line.label}</strong>
+          <span>${val !== null ? `${val.toFixed(2)} ${unit}` : `${px.toFixed(1)} px`}</span>
+        `;
+        main.addEventListener('click', () => {
+          selectedLineId = line.id;
+          setTool('measure');
+          updateAll();
+        });
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'danger small';
+        delBtn.type = 'button';
+        delBtn.textContent = '削除';
+        delBtn.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          measureLines = measureLines.filter(l => l.id !== line.id);
+          if (selectedLineId === line.id) {
+            selectedLineId = measureLines.length ? measureLines[measureLines.length - 1].id : null;
+          }
+          updateAll();
+        });
+
+        item.appendChild(main);
+        item.appendChild(delBtn);
+        lineListEl.appendChild(item);
+      });
+
+      countStat.textContent = `${measureLines.length} 本`;
+
+      if (validValues.length > 0) {
+        const sum = validValues.reduce((a, b) => a + b, 0);
+        const avg = sum / validValues.length;
+        const min = Math.min(...validValues);
+        const max = Math.max(...validValues);
+        avgStat.textContent = `${avg.toFixed(2)} ${unit}`;
+
+        outputArea.value = [
+          `基準: ${refReal} ${unit} (${refPx.toFixed(1)} px)`,
+          `本数: ${validValues.length} 本 / 平均: ${avg.toFixed(2)} ${unit} (最小 ${min.toFixed(2)} / 最大 ${max.toFixed(2)} ${unit})`,
+          '---',
+          ...linesText
+        ].join('\n');
+      } else {
+        avgStat.textContent = '-';
+        outputArea.value = measureLines.length ? linesText.join('\n') : '';
+      }
     }
 
-    canvas.addEventListener('pointerup', endDrag);
-    canvas.addEventListener('pointercancel', endDrag);
+    function updateAll() {
+      render();
+      renderLineListAndOutput();
+    }
+
+    copyTextBtn.addEventListener('click', async () => {
+      if (!outputArea.value) return;
+      try {
+        await navigator.clipboard.writeText(outputArea.value);
+        statusText.textContent = '測定結果をクリップボードにコピーしました。';
+      } catch {
+        outputArea.select();
+        document.execCommand('copy');
+        statusText.textContent = '測定結果を選択しました（コピーしてください）。';
+      }
+    });
+
+    downloadCsvBtn.addEventListener('click', () => {
+      if (!measureLines.length) return;
+      const unit = unitSelect.value;
+      const rows = [['No', 'Label', `Size(${unit})`, 'Pixels']];
+      measureLines.forEach((line, i) => {
+        const val = calcMeasuredValue(line);
+        const px = calcRealPx(line.p0, line.p1).toFixed(1);
+        rows.push([i + 1, line.label, val !== null ? val.toFixed(2) : '', px]);
+      });
+      const csv = rows.map(r => r.join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'size_measurement.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    downloadImgBtn.addEventListener('click', () => {
+      if (!hasImage) return;
+      const a = document.createElement('a');
+      a.href = canvas.toDataURL('image/png');
+      a.download = 'measured_photo.png';
+      a.click();
+    });
   </script>
 </body>
 </html>
