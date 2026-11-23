@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>サイズ測定アプリ</title>
+  <title>サイズ測定アプリ-rev1</title>
   <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body {
       margin: 0;
-      padding: 10px;
+      padding: 8px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: #121417;
       color: #f3f5f8;
@@ -20,6 +20,25 @@
       flex-direction: column;
       gap: 10px;
     }
+    header.sticky-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: #1c2026;
+      border: 1px solid #2d333d;
+      border-radius: 12px;
+      padding: 10px 12px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+    }
+    .app-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #f8fafc;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
     .panel {
       background: #1c2026;
       border: 1px solid #2d333d;
@@ -29,17 +48,17 @@
     .row {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 6px;
       align-items: center;
     }
     .row + .row {
-      margin-top: 10px;
+      margin-top: 8px;
     }
     label.btn, button {
       appearance: none;
       border: none;
       border-radius: 9px;
-      padding: 9px 12px;
+      padding: 8px 11px;
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
@@ -52,6 +71,7 @@
     }
     button.secondary, label.btn.secondary { background: #323842; }
     button.success { background: #2f855a; }
+    button.share-btn { background: #3182ce; }
     button.danger { background: #9b2c2c; }
     button.active { outline: 2px solid #63b3ed; background: #2c5282; }
     button.small { padding: 6px 10px; font-size: 12px; }
@@ -60,7 +80,7 @@
     .field {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       font-size: 13px;
     }
     .field input, .field select {
@@ -68,25 +88,25 @@
       color: #fff;
       border: 1px solid #444c56;
       border-radius: 8px;
-      padding: 7px 9px;
+      padding: 6px 8px;
       font-size: 14px;
     }
-    .field input[type="number"] { width: 76px; }
+    .field input[type="number"] { width: 72px; }
 
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      margin-top: 10px;
+      gap: 6px;
+      margin-top: 8px;
     }
     .stat {
       background: #121417;
       border: 1px solid #2b313b;
       border-radius: 9px;
-      padding: 8px 10px;
+      padding: 6px 8px;
     }
     .stat-label { font-size: 11px; color: #9aa4b2; }
-    .stat-val { font-size: 16px; font-weight: 700; color: #63b3ed; margin-top: 2px; }
+    .stat-val { font-size: 15px; font-weight: 700; color: #63b3ed; margin-top: 1px; }
 
     .canvas-wrap {
       position: relative;
@@ -178,13 +198,18 @@
     .status {
       font-size: 12px;
       color: #a0aec0;
-      margin-top: 8px;
+      margin-top: 6px;
+      line-height: 1.4;
     }
   </style>
 </head>
 <body>
   <div class="app">
-    <div class="panel">
+    <header class="sticky-header" id="appHeader">
+      <div class="app-title">
+        <span>サイズ測定アプリ-rev1</span>
+      </div>
+
       <div class="row">
         <label class="btn" for="photoInput">写真を選ぶ / 撮影</label>
         <input id="photoInput" type="file" accept="image/*" />
@@ -232,7 +257,7 @@
       </div>
 
       <div class="status" id="statusText">写真を選択してください。基準線A-Bを合わせたら「＋ 測定線を1本追加」を押してください。</div>
-    </div>
+    </header>
 
     <div class="panel">
       <div class="canvas-wrap" id="canvasWrap">
@@ -252,6 +277,7 @@
     <div class="panel">
       <div class="row">
         <strong>結果出力</strong>
+        <button id="shareResultBtn" class="share-btn small" type="button">共有する (LINE・メール等)</button>
         <button id="copyTextBtn" class="secondary small" type="button">テキストをコピー</button>
         <button id="downloadCsvBtn" class="secondary small" type="button">CSV保存</button>
         <button id="downloadImgBtn" class="secondary small" type="button">測定画像保存</button>
@@ -284,6 +310,7 @@
     const lineListEl = document.getElementById('lineList');
     const outputArea = document.getElementById('outputArea');
 
+    const shareResultBtn = document.getElementById('shareResultBtn');
     const copyTextBtn = document.getElementById('copyTextBtn');
     const downloadCsvBtn = document.getElementById('downloadCsvBtn');
     const downloadImgBtn = document.getElementById('downloadImgBtn');
@@ -414,7 +441,6 @@
         }
       };
       measureLines.push(line);
-      // 常に新しく追加した線を操作対象にし、それ以前はロック
       activeLineId = id;
       setTool('measure');
       updateAll();
@@ -510,11 +536,9 @@
       return (linePx / refPx) * refReal;
     }
 
-    // 中心がわかりやすい十字（＋）マーカーを描画
     function drawCrosshair(x, y, color, editable) {
       const arm = editable ? 13 : 9;
       ctx.save();
-      // 白い縁取りで背景に埋もれにくくする
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = editable ? 4.5 : 3;
       ctx.beginPath();
@@ -524,7 +548,6 @@
       ctx.lineTo(x, y + arm);
       ctx.stroke();
 
-      // カラーの十字線
       ctx.strokeStyle = color;
       ctx.lineWidth = editable ? 2.5 : 1.8;
       ctx.beginPath();
@@ -534,7 +557,6 @@
       ctx.lineTo(x, y + arm);
       ctx.stroke();
 
-      // 中央の極小ドット（交点確認用）
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
       ctx.arc(x, y, editable ? 2 : 1.5, 0, Math.PI * 2);
@@ -576,11 +598,9 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
 
-      // 基準線 A-B（基準線モードの時だけ操作可能）
       const refEditable = activeTool === 'ref';
       drawLine(refLine.p0, refLine.p1, '#38bdf8', ['A', 'B'], refEditable, refEditable ? 1 : 0.55);
 
-      // 測定線（測定線モードかつ対象1本のみ操作可能、それ以外はロック）
       const editableLine = getEditableLine();
       measureLines.forEach((line) => {
         const isEditable = activeTool === 'measure' && editableLine && line.id === editableLine.id;
@@ -595,7 +615,6 @@
       });
     }
 
-    // 厳密に「今操作可能な1対象」の端点のみ当たり判定する
     function findHitEditableHandle(cx, cy) {
       const hitRadius = 24;
 
@@ -645,7 +664,6 @@
         dragState = hit;
         canvas.setPointerCapture(e.pointerId);
       } else if (zoom > 1) {
-        // ロック中の線や基準線に触れても動かないよう、拡大中は画面パンとして扱う
         dragState = { type: 'pan', lastNorm: canvasPxToNorm(pos.x, pos.y) };
         canvas.setPointerCapture(e.pointerId);
       }
@@ -766,6 +784,7 @@
         avgStat.textContent = `${avg.toFixed(2)} ${unit}`;
 
         outputArea.value = [
+          `[サイズ測定アプリ-rev1]`,
           `基準: ${refReal} ${unit} (${refPx.toFixed(1)} px)`,
           `本数: ${validValues.length} 本 / 平均: ${avg.toFixed(2)} ${unit} (最小 ${min.toFixed(2)} / 最大 ${max.toFixed(2)} ${unit})`,
           '---',
@@ -781,6 +800,30 @@
       render();
       renderLineListAndOutput();
     }
+
+    shareResultBtn.addEventListener('click', async () => {
+      if (!outputArea.value) return;
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: 'サイズ測定アプリ-rev1 結果',
+            text: outputArea.value
+          });
+          statusText.textContent = '共有メニューを開きました。';
+          return;
+        } catch (err) {
+          if (err && err.name === 'AbortError') return;
+        }
+      }
+      try {
+        await navigator.clipboard.writeText(outputArea.value);
+        statusText.textContent = '共有非対応環境のため結果をコピーしました。LINEやメールに貼り付けてください。';
+      } catch {
+        outputArea.select();
+        document.execCommand('copy');
+        statusText.textContent = '結果を選択しました。コピーして貼り付けてください。';
+      }
+    });
 
     copyTextBtn.addEventListener('click', async () => {
       if (!outputArea.value) return;
@@ -808,7 +851,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'size_measurement.csv';
+      a.download = 'size_measurement_rev1.csv';
       a.click();
       URL.revokeObjectURL(url);
     });
@@ -817,7 +860,7 @@
       if (!hasImage) return;
       const a = document.createElement('a');
       a.href = canvas.toDataURL('image/png');
-      a.download = 'measured_photo.png';
+      a.download = 'measured_photo_rev1.png';
       a.click();
     });
   </script>
