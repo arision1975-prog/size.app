@@ -137,13 +137,14 @@
       background: #16221c;
     }
     .line-item.locked {
-      opacity: 0.75;
+      opacity: 0.72;
     }
     .line-main {
       display: flex;
       align-items: center;
       gap: 8px;
       flex: 1;
+      flex-wrap: wrap;
     }
     .badge {
       font-size: 11px;
@@ -304,7 +305,6 @@
     };
 
     // 測定線配列: [{ id, label, p0:{x,y}, p1:{x,y} }]
-    // 原則、配列の最後（最新）の線のみ操作可能。個別解除したい場合のみ activeLineId を指定。
     let measureLines = [];
     let activeLineId = null;
     let nextLineNum = 1;
@@ -327,11 +327,11 @@
       toolPanBtn.classList.toggle('active', tool === 'pan');
 
       if (tool === 'ref') {
-        statusText.textContent = '基準線(A-B)モード：AとBのみ動かせます。測定線はロック中です。';
+        statusText.textContent = '基準線(A-B)モード：AとBのみ動かせます。測定線はすべてロック中です。';
       } else if (tool === 'measure') {
         const target = getEditableLine();
         statusText.textContent = target
-          ? `最新線操作モード：${target.label} のみ動かせます。他の線はロックされています。`
+          ? `最新線操作モード：${target.label} のみ動かせます。基準線と他の測定線はロック中です。`
           : '測定線がありません。「＋ 測定線を1本追加」を押してください。';
       } else {
         statusText.textContent = '画面移動モード：ドラッグで拡大表示中の位置を移動できます。全線はロック中です。';
@@ -397,7 +397,6 @@
       }
       const id = nextLineNum++;
       const offset = ((id - 1) % 6) * 0.03;
-      // 現在の表示中心付近に新しい線を配置
       const cx = viewCenter.x;
       const cy = viewCenter.y;
       const halfLen = 0.12 / zoom;
@@ -415,7 +414,7 @@
         }
       };
       measureLines.push(line);
-      // 新しく追加した線を常に最新（操作対象）にする
+      // 常に新しく追加した線を操作対象にし、それ以前はロック
       activeLineId = id;
       setTool('measure');
       updateAll();
@@ -511,6 +510,38 @@
       return (linePx / refPx) * refReal;
     }
 
+    // 中心がわかりやすい十字（＋）マーカーを描画
+    function drawCrosshair(x, y, color, editable) {
+      const arm = editable ? 13 : 9;
+      ctx.save();
+      // 白い縁取りで背景に埋もれにくくする
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = editable ? 4.5 : 3;
+      ctx.beginPath();
+      ctx.moveTo(x - arm, y);
+      ctx.lineTo(x + arm, y);
+      ctx.moveTo(x, y - arm);
+      ctx.lineTo(x, y + arm);
+      ctx.stroke();
+
+      // カラーの十字線
+      ctx.strokeStyle = color;
+      ctx.lineWidth = editable ? 2.5 : 1.8;
+      ctx.beginPath();
+      ctx.moveTo(x - arm, y);
+      ctx.lineTo(x + arm, y);
+      ctx.moveTo(x, y - arm);
+      ctx.lineTo(x, y + arm);
+      ctx.stroke();
+
+      // 中央の極小ドット（交点確認用）
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(x, y, editable ? 2 : 1.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
     function drawLine(p0Norm, p1Norm, color, labels, editable, alpha = 1) {
       const a = normToCanvasPx(p0Norm.x, p0Norm.y);
       const b = normToCanvasPx(p1Norm.x, p1Norm.y);
@@ -518,24 +549,18 @@
       ctx.save();
       ctx.globalAlpha = alpha;
       ctx.strokeStyle = color;
-      ctx.lineWidth = editable ? 3.5 : 2;
+      ctx.lineWidth = editable ? 3 : 2;
       ctx.beginPath();
       ctx.moveTo(a.x, a.y);
       ctx.lineTo(b.x, b.y);
       ctx.stroke();
 
       [a, b].forEach((pt, idx) => {
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, editable ? 11 : 7, 0, Math.PI * 2);
-        ctx.fillStyle = color;
-        ctx.fill();
-        ctx.lineWidth = editable ? 2.5 : 1.5;
-        ctx.strokeStyle = '#ffffff';
-        ctx.stroke();
+        drawCrosshair(pt.x, pt.y, color, editable);
 
         ctx.fillStyle = '#ffffff';
         ctx.font = editable ? 'bold 12px sans-serif' : '11px sans-serif';
-        ctx.fillText(labels[idx], pt.x + 12, pt.y - 6);
+        ctx.fillText(labels[idx], pt.x + 14, pt.y - 8);
       });
       ctx.restore();
     }
@@ -551,23 +576,26 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
 
+      // 基準線 A-B（基準線モードの時だけ操作可能）
       const refEditable = activeTool === 'ref';
-      drawLine(refLine.p0, refLine.p1, '#38bdf8', ['A', 'B'], refEditable, refEditable ? 1 : 0.7);
+      drawLine(refLine.p0, refLine.p1, '#38bdf8', ['A', 'B'], refEditable, refEditable ? 1 : 0.55);
 
+      // 測定線（測定線モードかつ対象1本のみ操作可能、それ以外はロック）
       const editableLine = getEditableLine();
       measureLines.forEach((line) => {
         const isEditable = activeTool === 'measure' && editableLine && line.id === editableLine.id;
         drawLine(
           line.p0,
           line.p1,
-          isEditable ? '#4ade80' : '#a0aec0',
+          isEditable ? '#4ade80' : '#94a3b8',
           [`${line.label}a`, `${line.label}b`],
           isEditable,
-          isEditable ? 1 : 0.65
+          isEditable ? 1 : 0.55
         );
       });
     }
 
+    // 厳密に「今操作可能な1対象」の端点のみ当たり判定する
     function findHitEditableHandle(cx, cy) {
       const hitRadius = 24;
 
@@ -617,7 +645,7 @@
         dragState = hit;
         canvas.setPointerCapture(e.pointerId);
       } else if (zoom > 1) {
-        // 拡大中はロック済みの線や余白をドラッグしても画面パンできるようにして誤操作を防止
+        // ロック中の線や基準線に触れても動かないよう、拡大中は画面パンとして扱う
         dragState = { type: 'pan', lastNorm: canvasPxToNorm(pos.x, pos.y) };
         canvas.setPointerCapture(e.pointerId);
       }
@@ -640,14 +668,14 @@
       const nx = Math.max(0, Math.min(1, norm.x));
       const ny = Math.max(0, Math.min(1, norm.y));
 
-      if (dragState.type === 'ref') {
+      if (dragState.type === 'ref' && activeTool === 'ref') {
         if (dragState.index === 0) refLine.p0 = { x: nx, y: ny };
         else refLine.p1 = { x: nx, y: ny };
-      } else if (dragState.type === 'measure') {
-        const line = measureLines.find(l => l.id === dragState.lineId);
-        if (line) {
-          if (dragState.index === 0) line.p0 = { x: nx, y: ny };
-          else line.p1 = { x: nx, y: ny };
+      } else if (dragState.type === 'measure' && activeTool === 'measure') {
+        const target = getEditableLine();
+        if (target && target.id === dragState.lineId) {
+          if (dragState.index === 0) target.p0 = { x: nx, y: ny };
+          else target.p1 = { x: nx, y: ny };
         }
       }
       updateAll();
@@ -680,7 +708,7 @@
           linesText.push(`${line.label}: ${px.toFixed(1)}px`);
         }
 
-        const isUnlocked = editableLine && line.id === editableLine.id;
+        const isUnlocked = activeTool === 'measure' && editableLine && line.id === editableLine.id;
         const item = document.createElement('div');
         item.className = 'line-item ' + (isUnlocked ? 'unlocked' : 'locked');
 
